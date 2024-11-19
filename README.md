@@ -8,6 +8,9 @@ For our project, we are training a machine learning model to classify music into
 
 Our project will utilize two different algorithms at different stages of development. In the early stages of development, we will use a K-Nearest Neighbors algorithm to develop our model’s parameters based on smaller datasets, develop a baseline for accurate classifications, and to evaluate and enhance the feature extraction process. After achieving sufficient results from smaller datasets using the K-Nearest Neighbor approach, we will subsequently apply our learnings from small to large datasets using a recurrent neural network approach. With this convolutional neural network, we plan to enhance performance accuracy based on raw data, optimize identification speed for large datasets, capture complex dependencies in data, and derive insights about the defining traits of certain genres based on model identification.  
 
+![image of KNN](https://miro.medium.com/v2/resize:fit:505/0*2_qzcm2gSe9l67aI.png)
+
+
 ![image of RNN](https://miro.medium.com/v2/resize:fit:1400/1*5bjD7kmtaJI-n3qztBC2Ig.png) 
 
 With this machine learning model, we aim to allow users to explore similar songs or playlists based on their music choices and provide users with related music recommendations that closely adhere to their genre-specific listening preferences. We hope that employing this model will enhance the user experience and lead to the creation of brand new connections between users and songs based on genre.
