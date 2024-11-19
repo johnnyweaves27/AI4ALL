@@ -47,7 +47,7 @@ else:
         print('Current Directory: ', os.getcwd())
     
         # Read the csv from Desktop locally
-        df = pd.read_csv('ClassicHit.csv')
+        df = pd.read_csv('ClassicHit_cleaned.csv')
     
         print("Done!")
 
@@ -327,6 +327,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble  import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
+
+# Additional classification; Recurrent Neural Network (RNN) model
+from keras.models import Sequential
+from keras.layers import SimpleRNN, Dense
+
+# Add in RNN implmentation here
 
 # Classification
 # First we are going to split the data into training and testing
