@@ -1,6 +1,8 @@
 # AI4ALL
 # Project: Music Genre Classification
 
+![Spotify listener](https://static1.makeuseofimages.com/wordpress/wp-content/uploads/2024/08/a-woman-listening-to-music-with-headphones-and-the-spotify-logo-on-her-phone-screen.jpg)
+
 ## Project Description
 With the increasing popularity of music streaming services like Spotify and Apple Music year over year, innovative implementations of audio-based machine learning algorithms have been underscored as essential components of the music streaming market. Spotify and other music streaming companies have implemented machine learning in a variety of areas within their services, ranging from song recommendations based on prior listening preferences to smart artist suggestions based on similar listener data. Given the wide range of practical applications for audio-based machine learning algorithms, for our project, we decided to focus on developing a model that would use song genres to draw insights and connections between songs to enhance the user experience. 
 
