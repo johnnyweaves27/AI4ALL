@@ -6,10 +6,10 @@ With the increasing popularity of music streaming services like Spotify and Appl
 
 For our project, we are training a machine learning model to classify music into various genres based on audio features such as tempo, pitch, and rhythm. Users will be able to use this model’s assistance to identify the genre of their music choice quickly and efficiently. The users will be Spotify listeners and song enthusiasts. 
 
+Image: an example of some features Spotify attributes to songs for classificiation
+![Spotify features link](https://preview.redd.it/spotify-audio-features-analysis-v0-kmm4twrfkmub1.png?width=1080&crop=smart&auto=webp&s=beef5981c125757f209d1afe2c5ba83ddb347b32)
+
 Our project will utilize two different algorithms at different stages of development. In the early stages of development, we will use a K-Nearest Neighbors algorithm to develop our model’s parameters based on smaller datasets, develop a baseline for accurate classifications, and to evaluate and enhance the feature extraction process. After achieving sufficient results from smaller datasets using the K-Nearest Neighbor approach, we will subsequently apply our learnings from small to large datasets using a recurrent neural network approach. With this convolutional neural network, we plan to enhance performance accuracy based on raw data, optimize identification speed for large datasets, capture complex dependencies in data, and derive insights about the defining traits of certain genres based on model identification.  
-
-![image of KNN](https://miro.medium.com/v2/resize:fit:505/0*2_qzcm2gSe9l67aI.png)
-
 
 ![image of RNN](https://miro.medium.com/v2/resize:fit:1400/1*5bjD7kmtaJI-n3qztBC2Ig.png) 
 
