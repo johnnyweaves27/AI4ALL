@@ -1,0 +1,109 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.optimizers import Adamax
+from sklearn.metrics import classification_report, confusion_matrix
+from tensorflow.keras.metrics import Precision, Recall
+
+# Data preprocessing
+# Assuming df is your original dataframe with columns: ['Track', 'Artist', 'Year', 'Genre', 'Danceability', 'Energy', ...]
+
+# Step 1: Select numerical features and normalize them
+df_numeric = df.drop(['Track', 'Artist', 'Year', 'Genre'], axis=1)
+scaler = StandardScaler()  # Normalize features
+df_scaled = pd.DataFrame(scaler.fit_transform(df_numeric), columns=df_numeric.columns)
+
+# Step 2: Convert 'Genre' labels into numerical labels
+label_encoder = LabelEncoder()
+y = label_encoder.fit_transform(df['Genre'])
+
+# Step 3: Reshape features for CNN (2D image-like format)
+X = df_scaled.values
+X = X.reshape(X.shape[0], 224, 224, 1)  # Treating data as "images" (224x224 pixels, 1 color channel)
+
+# Step 4: Split data into training, validation, and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
+
+# Step 5: ImageDataGenerator for data augmentation
+image_generator = ImageDataGenerator(rescale=1./255, brightness_range=(0.8, 1.2))
+
+# Step 6: Create data generators
+tr_gen = image_generator.flow(X_train, y_train, batch_size=16)
+valid_gen = image_generator.flow(X_valid, y_valid, batch_size=16)
+ts_gen = image_generator.flow(X_test, y_test, batch_size=16, shuffle=False)
+
+# Step 7: Build the CNN model
+cnn_model = Sequential()
+
+# Convolutional layers with MaxPooling and Dropout
+cnn_model.add(Conv2D(64, (3, 3), padding='same', input_shape=(224, 224, 1), activation="relu"))
+cnn_model.add(MaxPooling2D(pool_size=(2, 2)))
+
+cnn_model.add(Conv2D(128, (3, 3), padding='same', activation="relu"))
+cnn_model.add(MaxPooling2D(pool_size=(2, 2)))
+cnn_model.add(Dropout(0.25))
+
+cnn_model.add(Conv2D(256, (3, 3), padding='same', activation="relu"))
+cnn_model.add(MaxPooling2D(pool_size=(2, 2)))
+cnn_model.add(Dropout(0.25))
+
+# Flatten the output for fully connected layers
+cnn_model.add(Flatten())
+
+# Fully connected layers (Dense)
+cnn_model.add(Dense(256, activation="relu"))
+cnn_model.add(Dropout(0.35))
+
+# Output layer with 'softmax' activation for classification
+cnn_model.add(Dense(len(label_encoder.classes_), activation="softmax"))
+
+# Step 8: Compile the model
+cnn_model.compile(optimizer=Adamax(learning_rate=0.001), 
+                  loss="sparse_categorical_crossentropy", 
+                  metrics=['accuracy', Precision(), Recall()])
+
+# Display the model summary
+cnn_model.summary()
+
+# Step 9: Train the model
+history = cnn_model.fit(tr_gen, epochs=5, validation_data=valid_gen)
+
+# Step 10: Evaluate the model on training, validation, and test sets
+train_score = cnn_model.evaluate(tr_gen, verbose=1)
+valid_score = cnn_model.evaluate(valid_gen, verbose=1)
+test_score = cnn_model.evaluate(ts_gen, verbose=1)
+
+# Print accuracy and loss
+print(f'Train Accuracy: {train_score[1]*100:.2f}%')
+print(f'Train Loss: {train_score[0]:.4f}')
+print(f'\nValidation Accuracy: {valid_score[1]*100:.2f}%')
+print(f'Validation Loss: {valid_score[0]:.4f}')
+print(f'\nTest Accuracy: {test_score[1]*100:.2f}%')
+print(f'Test Loss: {test_score[0]:.4f}')
+
+# Step 11: Generate predictions and classification report
+preds = cnn_model.predict(ts_gen)
+y_pred = np.argmax(preds, axis=1)
+
+# Display classification report
+clr = classification_report(ts_gen.classes, y_pred)
+print(clr)
+
+# Step 12: Save the trained model
+cnn_model.save("cnn_model.h5")
+
+# Step 13: Create and display confusion matrix
+cm = confusion_matrix(ts_gen.classes, y_pred)
+labels = list(label_encoder.classes_)
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.title('Confusion Matrix')
+plt.show()
