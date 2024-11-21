@@ -59,3 +59,41 @@ plt.title("Confusion Matrix for Music Genre Classification")
 plt.xlabel("Predicted Label")
 plt.ylabel("True Label")
 plt.show()
+
+4. Convolutional Neural Network (CNN)
+# ================================
+
+# Ensure proper reshaping for CNN input
+# Determine grid dimensions based on the number of features (16 in this case)
+num_features = X_train.shape[1]
+height, width = 4, 4  # Adjust dimensions to fit 16 features (4x4 grid)
+
+# Validate that reshaping dimensions are correct
+if height * width != num_features:
+    raise ValueError(f"Cannot reshape data of {num_features} features into {height}x{width} grid")
+
+# Reshape features for CNN (4x4 grid with 1 channel)
+X_train_cnn = X_train.reshape(-1, height, width, 1)
+X_test_cnn = X_test.reshape(-1, height, width, 1)
+
+# Define CNN architecture
+cnn_model = Sequential([
+    Conv2D(32, (2, 2), activation='relu', input_shape=(height, width, 1)),
+    MaxPooling2D(pool_size=(2, 2)),
+    Dropout(0.3),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.3),
+    Dense(len(label_encoder.classes_), activation='softmax')
+])
+
+# Compile CNN model
+cnn_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train CNN model
+cnn_model.fit(X_train_cnn, y_train, validation_data=(X_test_cnn, y_test), epochs=20, batch_size=32)
+
+# Evaluate CNN model
+cnn_loss, cnn_accuracy = cnn_model.evaluate(X_test_cnn, y_test)
+print(f"CNN Accuracy: {cnn_accuracy:.3f}")
+
