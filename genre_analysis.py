@@ -1,36 +1,12 @@
-# This Python 3 environment comes with many helpful analytics libraries installed
-# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load
-
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-
-# Input data files are available in the read-only "../input/" directory
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
-
-import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
-
-# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
-# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from xgboost import XGBClassifier
-from keras.models import Sequential
-from keras.layers import Conv2D, Flatten, Dense, MaxPooling2D, Dropout
+import os
+import zipfile
 import warnings
-
-warnings.filterwarnings("ignore")
+import pathlib
+warnings.filterwarnings('ignore')
 
 # Run on google colab or locally or on Kaggle 
 
@@ -91,7 +67,9 @@ if 'Duration' in df.columns:
 df = df.drop(['Track', 'Artist', 'Year'], axis=1, errors='ignore')
 
 # Verify the changes
-print("Updated columns:", df.columns)# Encode categorical variables
+print("Updated columns:", df.columns)
+
+# Encode categorical variables
 label_encoder = LabelEncoder()
 df['Genre'] = label_encoder.fit_transform(df['Genre'])
 print(f"Encoded genres: {list(label_encoder.classes_)}")
@@ -172,12 +150,23 @@ evaluate_model("XGBoost", y_test, y_pred_xgb)
 # ================================
 # 4. Convolutional Neural Network (CNN)
 # ================================
-# Reshape features for CNN (convert to 2D grid: 3x4)
-X_train_cnn = X_train.reshape(-1, 3, 4, 1)
-X_test_cnn = X_test.reshape(-1, 3, 4, 1)
 
+# Ensure proper reshaping for CNN input
+# Determine grid dimensions based on the number of features (16 in this case)
+num_features = X_train.shape[1]
+height, width = 4, 4  # Adjust dimensions to fit 16 features (4x4 grid)
+
+# Validate that reshaping dimensions are correct
+if height * width != num_features:
+    raise ValueError(f"Cannot reshape data of {num_features} features into {height}x{width} grid")
+
+# Reshape features for CNN (4x4 grid with 1 channel)
+X_train_cnn = X_train.reshape(-1, height, width, 1)
+X_test_cnn = X_test.reshape(-1, height, width, 1)
+
+# Define CNN architecture
 cnn_model = Sequential([
-    Conv2D(32, (2, 2), activation='relu', input_shape=(3, 4, 1)),
+    Conv2D(32, (2, 2), activation='relu', input_shape=(height, width, 1)),
     MaxPooling2D(pool_size=(2, 2)),
     Dropout(0.3),
     Flatten(),
@@ -186,12 +175,83 @@ cnn_model = Sequential([
     Dense(len(label_encoder.classes_), activation='softmax')
 ])
 
+# Compile CNN model
 cnn_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train CNN model
 cnn_model.fit(X_train_cnn, y_train, validation_data=(X_test_cnn, y_test), epochs=20, batch_size=32)
 
-# Evaluate CNN
+# Evaluate CNN model
 cnn_loss, cnn_accuracy = cnn_model.evaluate(X_test_cnn, y_test)
 print(f"CNN Accuracy: {cnn_accuracy:.3f}")
+
+# ================================
+# 4. Recurrent Neural Network (RNN)
+# ================================
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense, Dropout, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
+from sklearn.utils.class_weight import compute_class_weight
+import numpy as np
+
+# Ensure proper reshaping for RNN input
+# Assume we have 16 features and reshape them into a sequence of 4 timesteps with 4 features per timestep
+num_features = X_train.shape[1]
+timesteps, features_per_timestep = 4, 4  # Adjust dimensions to fit the dataset
+
+# Validate that reshaping dimensions are correct
+if timesteps * features_per_timestep != num_features:
+    raise ValueError(f"Cannot reshape data of {num_features} features into {timesteps}x{features_per_timestep} sequence")
+
+# Reshape features for RNN (4 timesteps, 4 features per timestep)
+X_train_rnn = X_train.reshape(-1, timesteps, features_per_timestep)
+X_test_rnn = X_test.reshape(-1, timesteps, features_per_timestep)
+
+# Normalize the input data
+X_train_rnn = X_train_rnn / 255.0
+X_test_rnn = X_test_rnn / 255.0
+
+# Compute class weights
+unique_classes = np.unique(y_train)
+class_weights = compute_class_weight('balanced', classes=unique_classes, y=y_train)
+class_weights = dict(zip(unique_classes, class_weights))
+
+# Define RNN architecture
+rnn_model = Sequential([
+    # First RNN layer
+    SimpleRNN(64, activation='relu', input_shape=(timesteps, features_per_timestep), return_sequences=True),
+    BatchNormalization(),
+    Dropout(0.3),
+
+    # Second RNN layer
+    SimpleRNN(64, activation='relu', return_sequences=False),
+    BatchNormalization(),
+    Dropout(0.4),
+
+    # Fully connected layer
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    
+    # Output layer
+    Dense(len(unique_classes), activation='softmax')
+])
+
+# Compile RNN model
+rnn_model.compile(optimizer=Adam(learning_rate=0.001), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Define callbacks
+lr_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, factor=0.5, min_lr=0.00001)
+early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+
+# Train RNN model
+rnn_model.fit(X_train_rnn, y_train, validation_data=(X_test_rnn, y_test),
+              epochs=50, batch_size=32, class_weight=class_weights, callbacks=[lr_reduction, early_stopping])
+
+# Evaluate RNN model
+rnn_loss, rnn_accuracy = rnn_model.evaluate(X_test_rnn, y_test)
+print(f"RNN Accuracy: {rnn_accuracy:.3f}")
 
 # ================================
 # 5. Model Comparison
@@ -209,9 +269,3 @@ plt.title("Model Accuracy Comparison")
 plt.ylabel("Accuracy")
 plt.xlabel("Models")
 plt.show()
-
-# ================================
-# Save the Best Model 
-# ================================
-import joblib
-joblib.dump(rf_best_model, "spotify_genre_rf_model.pkl")
